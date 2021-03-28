@@ -10,8 +10,8 @@
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
 int Contrast=140;
-int top[] = {0,0,0,2,2,0,0,2,2,0,0,0,2,0,0,2,2,0,0,0,0,0,0,2,2,0,2,0,0,0,0,0,2,0,0,2,2,0,2,0,2,0,0,2};
-int bottom[] = {0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,2,0,0,0,0,0,2,0,0,2,0,0,0,0,0,2,0,0,2,0,0,0,0,0,2};
+int top[] =    {0,0,0,0,4,0,0,0,4,0,0,0,0,0,0,4,4,4,0,0,0,0,0,0,4,4,4,0,0,0,0,0,0,0,0,4,4,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int bottom[] = {0,0,0,0,0,0,2,0,0,0,3,3,0,2,0,0,0,0,0,3,0,0,2,0,0,0,0,0,0,3,2,0,0,2,0,0,0,0,0,2,0,0,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 int pos = 0;
 int charPos = 0;
@@ -29,26 +29,6 @@ const byte nothing[8] = {
   B00000,
   B00000,
 };
-const byte player[8] = {
-  B00100,
-  B01110,
-  B11111,
-  B11111,
-  B11111,
-  B11111,
-  B01110,
-  B00100,
-};
-const byte block[8] = {
-  B11111,
-  B11111,
-  B11111,
-  B11111,
-  B11111,
-  B11111,
-  B11111,
-  B11111,
-};
 const byte arrow[8] = {
   B01000,
   B01100,
@@ -59,7 +39,66 @@ const byte arrow[8] = {
   B01000,
   B00000,
 };
-
+const byte player[8] = {
+  B00100,
+  B01110,
+  B11111,
+  B11111,
+  B11111,
+  B11111,
+  B01110,
+  B00100,
+};
+const byte block1[8] = {
+  B00100,
+  B00100,
+  B01110,
+  B01110,
+  B11111,
+  B11111,
+  B11111,
+  B11111,
+};
+const byte block2[8] = {
+  B11111,
+  B11011,
+  B10001,
+  B10001,
+  B10001,
+  B10001,
+  B11011,
+  B11111,
+};
+const byte craw[8] = {
+  B00110,
+  B11111,
+  B11111,
+  B00110,
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+};
+const byte goalT[8] = {
+  B00010,
+  B00110,
+  B01110,
+  B11110,
+  B00110,
+  B00110,
+  B00110,
+  B00110,
+};
+const byte goalB[8] = {
+  B00110,
+  B00110,
+  B00110,
+  B00110,
+  B00110,
+  B11111,
+  B11111,
+  B11111,
+};
 void bootingAnimation() {
   lcd.setCursor(0, 0);
   lcd.write("Info-Projekt von");
@@ -106,25 +145,11 @@ void waitTillButton(){
   }
 }
 
-void setup() {
-   Serial.begin(9600);
-   analogWrite(6, Contrast);
-   lcd.begin(16, 2);
-   
-   lcd.createChar(0, nothing);
-   lcd.createChar(1, arrow);
-   lcd.createChar(2, block);
-   lcd.createChar(5, player);
-
-  bootingAnimation();
-  menueScreen();
-}
-
 boolean checkColission(){
-  return (top[pos]!=0 && charPos==0) || (bottom[pos]!=0 && charPos==1) ? true : false;
+  return (top[pos]!=0 && charPos==0) || (bottom[pos]!=0 && charPos==1);
 }
 
-void endingScreen() {
+void failScreen() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.write("GAME OVER");
@@ -132,6 +157,16 @@ void endingScreen() {
   lcd.write("Punkte: ");
   itoa(pos,buffer,10);
   lcd.write(buffer);
+  waitTillButton();
+  pos=0;
+}
+
+void winScreen() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.write("GEWONNEN");
+  lcd.setCursor(0, 1);
+  lcd.write("Punkte: OVER9000");
   waitTillButton();
   pos=0;
 }
@@ -186,7 +221,7 @@ void menueScreen() {
     lcd.setCursor(0, 1);
     lcd.write((byte) 0); // ""
     lcd.setCursor(9, 1);
-    lcd.write((byte) 1); // pfeil -------------------- der code ist noch hässlich TOOOOOOOOOOODOOOO !?!??!?!!?
+    lcd.write((byte) 1); // pfeil -------------------- der code ist noch hässlich TOOOOOOOOOOODOOOO !!!!!!!!!!111elf //vll umweg mit array ka
     delay(1000);
     if(digitalRead(tasterPin)==HIGH) {
       level = 4;
@@ -196,14 +231,37 @@ void menueScreen() {
   }
 }
 
+void setup() {
+   Serial.begin(9600);
+   analogWrite(6, Contrast);
+   lcd.begin(16, 2);
+   
+   lcd.createChar(0, nothing);
+   lcd.createChar(1, arrow);
+   lcd.createChar(2, block1);
+   lcd.createChar(3, block2);
+   lcd.createChar(4, craw);
+   lcd.createChar(5, player);
+   lcd.createChar(6, goalT);
+   lcd.createChar(7, goalB);
+
+  //bootingAnimation();
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
+  menueScreen();
+
+  do{
+  delay(2000 / level);
   render();
   pos++;
 
-  if(checkColission()){
-    endingScreen();
-  }
+  } while(!checkColission());
 
-  delay(2000 / level);
+  if(top[pos]==6&&bottom[pos]==7){
+    winScreen();
+  } else {
+    failScreen();
+  }
 }
