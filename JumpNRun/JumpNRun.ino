@@ -30,7 +30,12 @@ void bootingAnimation() {
       lcd.write(namen[i+j]);
     }
     delay(500);
+    
+    if(digitalRead(tasterPin)==HIGH) { //emergency exit xd ^^
+      break;
+    }
   }
+  delay(500);
 }
 
 void renderTop() {
@@ -129,6 +134,21 @@ void menueScreen() {
   A:;
 }
 
+void levelStartMusic() { //TODO add real sound tee-hee ^^
+  tone(8, NOTE_C5, 400);
+  delay(200);
+  tone(8, NOTE_D5, 400);
+  delay(200);
+  tone(8, NOTE_E5, 400);
+  delay(200);
+  tone(8, NOTE_G5, 400);
+  delay(400);
+  tone(8, NOTE_E5, 400);
+  delay(200);
+  tone(8, NOTE_G5, 400);
+  delay(600);
+}
+
 void setup() {
    Serial.begin(9600);
    analogWrite(6, Contrast);
@@ -149,13 +169,16 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   menueScreen();
+  levelStartMusic();
 
-  do{
-  delay(2000 / level);
+  while(true){
   render();
   pos++;
 
-  } while(!checkColission());
+  if(checkColission()) {break;}
+  
+  delay(2000 / level);
+  }
 
   if(top[pos]==6&&bottom[pos]==7){
     winScreen();
