@@ -6,99 +6,20 @@
 
 
 #include <LiquidCrystal.h>
+#include "pitches.h"
+#include "constants.h"
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
 int Contrast=140;
-int top[] =    {0,0,0,0,4,0,0,0,4,0,0,0,0,0,0,4,4,4,0,0,0,0,0,0,4,4,4,0,0,0,0,0,0,0,0,4,4,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-int bottom[] = {0,0,0,0,0,0,2,0,0,0,3,3,0,2,0,0,0,0,0,3,0,0,2,0,0,0,0,0,0,3,2,0,0,2,0,0,0,0,0,2,0,0,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 int pos = 0;
 int charPos = 0;
 int tasterPin = 7;
-char buffer [10];
 int level = 0;
+char buffer [10];
 
-const byte nothing[8] = {
-  B00000,
-  B00000,
-  B00000,
-  B00000,
-  B00000,
-  B00000,
-  B00000,
-  B00000,
-};
-const byte arrow[8] = {
-  B01000,
-  B01100,
-  B01110,
-  B11111,
-  B01110,
-  B01100,
-  B01000,
-  B00000,
-};
-const byte player[8] = {
-  B00100,
-  B01110,
-  B11111,
-  B11111,
-  B11111,
-  B11111,
-  B01110,
-  B00100,
-};
-const byte block1[8] = {
-  B00100,
-  B00100,
-  B01110,
-  B01110,
-  B11111,
-  B11111,
-  B11111,
-  B11111,
-};
-const byte block2[8] = {
-  B11111,
-  B11011,
-  B10001,
-  B10001,
-  B10001,
-  B10001,
-  B11011,
-  B11111,
-};
-const byte craw[8] = {
-  B00110,
-  B11111,
-  B11111,
-  B00110,
-  B00000,
-  B00000,
-  B00000,
-  B00000,
-};
-const byte goalT[8] = {
-  B00010,
-  B00110,
-  B01110,
-  B11110,
-  B00110,
-  B00110,
-  B00110,
-  B00110,
-};
-const byte goalB[8] = {
-  B00110,
-  B00110,
-  B00110,
-  B00110,
-  B00110,
-  B11111,
-  B11111,
-  B11111,
-};
+
 void bootingAnimation() {
   lcd.setCursor(0, 0);
   lcd.write("Info-Projekt von");
@@ -157,6 +78,7 @@ void failScreen() {
   lcd.write("Punkte: ");
   itoa(pos,buffer,10);
   lcd.write(buffer);
+  delay(1000);
   waitTillButton();
   pos=0;
 }
@@ -167,10 +89,10 @@ void winScreen() {
   lcd.write("GEWONNEN");
   lcd.setCursor(0, 1);
   lcd.write("Punkte: OVER9000");
+  delay(1000);
   waitTillButton();
   pos=0;
 }
-
 
 void menueScreen() {
   lcd.clear();
@@ -186,49 +108,25 @@ void menueScreen() {
   lcd.setCursor(10, 1);
   lcd.write("1-4");
 
+  int off[][4] = {{9, 1}, {0, 0}, {9, 0}, {0, 1}};
+  int on[][4] = {{0, 0}, {9, 0}, {0, 1}, {9, 1}};
 
   while(true) {
-    lcd.setCursor(9, 1);
-    lcd.write((byte) 0); // ""
-    lcd.setCursor(0, 0);
-    lcd.write((byte) 1); // pfeil
-    delay(1000);
-    if(digitalRead(tasterPin)==HIGH) {
-      level = 1;
-      break;
+    for(int i = 0; i<4; i++) {
+      lcd.setCursor(off[i][0], off[i][1]);
+      lcd.write((byte) 0); // ""
+      lcd.setCursor(on[i][0], on[i][1]);
+      lcd.write((byte) 1); // pfeil
+      for(int j = 0; j<5; j++){
+        delay(200);
+        if(digitalRead(tasterPin)==HIGH) {
+          level = i+1;
+          goto A; // (╯°□°）╯︵ ┻━┻ Michael Approved
+        }
+      }
     }
-    
-    lcd.setCursor(0, 0);
-    lcd.write((byte) 0); // ""
-    lcd.setCursor(9, 0);
-    lcd.write((byte) 1); // pfeil
-    delay(1000);
-    if(digitalRead(tasterPin)==HIGH) {
-      level = 2;
-      break;
-    }
-    
-    lcd.setCursor(9, 0);
-    lcd.write((byte) 0); // ""
-    lcd.setCursor(0, 1);
-    lcd.write((byte) 1); // pfeil
-    delay(1000);
-    if(digitalRead(tasterPin)==HIGH) {
-      level = 3;
-      break;
-    }
-    
-    lcd.setCursor(0, 1);
-    lcd.write((byte) 0); // ""
-    lcd.setCursor(9, 1);
-    lcd.write((byte) 1); // pfeil -------------------- der code ist noch hässlich TOOOOOOOOOOODOOOO !!!!!!!!!!111elf //vll umweg mit array ka
-    delay(1000);
-    if(digitalRead(tasterPin)==HIGH) {
-      level = 4;
-      break;
-    }
-    
   }
+  A:;
 }
 
 void setup() {
@@ -245,7 +143,7 @@ void setup() {
    lcd.createChar(6, goalT);
    lcd.createChar(7, goalB);
 
-  //bootingAnimation();
+  bootingAnimation();
 }
 
 void loop() {
