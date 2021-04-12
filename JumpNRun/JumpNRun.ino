@@ -31,7 +31,7 @@ void bootingAnimation() {
     }
     delay(500);
     
-    if(digitalRead(tasterPin)==HIGH) { //emergency exit xd ^^
+    if(digitalRead(tasterPin)==HIGH) { //fast exit bootingAnimation
       break;
     }
   }
@@ -75,6 +75,18 @@ boolean checkColission(){
   return (top[pos]!=0 && charPos==0) || (bottom[pos]!=0 && charPos==1);
 }
 
+
+void failMusic() { //TODO add real sound
+  tone(8, NOTE_G4, 400);
+  delay(300);
+  tone(8, NOTE_E4, 400);
+  delay(300);
+  tone(8, NOTE_D4, 400);
+  delay(300);
+  tone(8, NOTE_C4, 400);
+  delay(800);
+}
+
 void failScreen() {
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -83,7 +95,8 @@ void failScreen() {
   lcd.write("Punkte: ");
   itoa(pos,buffer,10);
   lcd.write(buffer);
-  delay(1000);
+  //delay(1000);
+  failMusic();
   waitTillButton();
   pos=0;
 }
@@ -126,7 +139,7 @@ void menueScreen() {
         delay(200);
         if(digitalRead(tasterPin)==HIGH) {
           level = i+1;
-          goto A; // (╯°□°）╯︵ ┻━┻ Michael Approved
+          goto A; // (╯°□°）╯︵ ┻━┻ 
         }
       }
     }
@@ -134,7 +147,7 @@ void menueScreen() {
   A:;
 }
 
-void levelStartMusic() { //TODO add real sound tee-hee ^^
+void levelStartMusic() { //TODO add real sound
   tone(8, NOTE_C5, 400);
   delay(200);
   tone(8, NOTE_D5, 400);
