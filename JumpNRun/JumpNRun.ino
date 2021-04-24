@@ -2,14 +2,21 @@
  * Informatik Projekt von Harun Sebastian und Michael
  * Jump and Run auf dem LCD Display des Arduino
  * Verkabelung LCD: https://www.instructables.com/Arduino-Interfacing-With-LCD-Without-Potentiometer/
+ * Github: https://github.com/MichaelBehringer/ArduinoJumpNRun
  */
 
-
 #include <LiquidCrystal.h>
+#include <IRremote.h> //Sketch->Bibliothek einbinden
+#include <IRremoteInt.h> 
+
 #include "pitches.h"
+#include "jingles.h"
 #include "constants.h"
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+IRrecv irrecv(10);
+decode_results results;
 
 int Contrast=140;
 
@@ -19,6 +26,24 @@ int tasterPin = 7;
 int level = 0;
 char buffer [10];
 
+int readIrValue(){
+  results.value = 0;
+  irrecv.decode(&results);
+  irrecv.resume();
+  return results.value;
+}
+
+boolean isActionPressed(){
+  return (digitalRead(tasterPin)==HIGH) || (readIrValue() != 0) ? true : false;
+}
+
+void waitTillButton(){
+  while(true){
+    if(isActionPressed()){
+      return;
+    }
+  }
+}
 
 void bootingAnimation() {
   lcd.setCursor(0, 0);
@@ -30,86 +55,12 @@ void bootingAnimation() {
       lcd.write(namen[i+j]);
     }
     delay(500);
-    
-    if(digitalRead(tasterPin)==HIGH) { //fast exit bootingAnimation
+        
+    if(isActionPressed()) { //fast exit bootingAnimation
       break;
     }
   }
   delay(500);
-}
-
-void renderTop() {
-  lcd.setCursor(0, 0);
-  for(int i = 1; i<=15; i++) {
-    lcd.write((byte) top[i+pos]);
-  }
-}
-
-void renderBottom() {
-  lcd.setCursor(0, 1);
-  for(int i = 1; i<=15; i++) {
-    lcd.write((byte) bottom[i+pos]);
-  }
-}
-
-void render(){
-  lcd.clear();
-  
-  renderTop();
-  renderBottom();
-
-  charPos = digitalRead(tasterPin)==HIGH ? 0 : 1;
-  lcd.setCursor(0, charPos);
-  lcd.write((byte) 5);
-}
-
-void waitTillButton(){
-  while(true){
-    if(digitalRead(tasterPin)==HIGH){
-      return;
-    }
-  }
-}
-
-boolean checkColission(){
-  return (top[pos]!=0 && charPos==0) || (bottom[pos]!=0 && charPos==1);
-}
-
-
-void failMusic() { //TODO add real sound
-  tone(8, NOTE_G4, 400);
-  delay(300);
-  tone(8, NOTE_E4, 400);
-  delay(300);
-  tone(8, NOTE_D4, 400);
-  delay(300);
-  tone(8, NOTE_C4, 400);
-  delay(800);
-}
-
-void failScreen() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.write("GAME OVER");
-  lcd.setCursor(0, 1);
-  lcd.write("Punkte: ");
-  itoa(pos,buffer,10);
-  lcd.write(buffer);
-  //delay(1000);
-  failMusic();
-  waitTillButton();
-  pos=0;
-}
-
-void winScreen() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.write("GEWONNEN");
-  lcd.setCursor(0, 1);
-  lcd.write("Punkte: OVER9000");
-  delay(1000);
-  waitTillButton();
-  pos=0;
 }
 
 void menueScreen() {
@@ -129,7 +80,7 @@ void menueScreen() {
   int off[][4] = {{9, 1}, {0, 0}, {9, 0}, {0, 1}};
   int on[][4] = {{0, 0}, {9, 0}, {0, 1}, {9, 1}};
 
-  while(true) {
+  while(true) {                              // Levelauswahl mit Pfeil
     for(int i = 0; i<4; i++) {
       lcd.setCursor(off[i][0], off[i][1]);
       lcd.write((byte) 0); // ""
@@ -137,7 +88,7 @@ void menueScreen() {
       lcd.write((byte) 1); // pfeil
       for(int j = 0; j<5; j++){
         delay(200);
-        if(digitalRead(tasterPin)==HIGH) {
+        if(isActionPressed()) {
           level = i+1;
           goto A; // (╯°□°）╯︵ ┻━┻ 
         }
@@ -147,25 +98,58 @@ void menueScreen() {
   A:;
 }
 
-void levelStartMusic() { //TODO add real sound
-  tone(8, NOTE_C5, 400);
-  delay(200);
-  tone(8, NOTE_D5, 400);
-  delay(200);
-  tone(8, NOTE_E5, 400);
-  delay(200);
-  tone(8, NOTE_G5, 400);
-  delay(400);
-  tone(8, NOTE_E5, 400);
-  delay(200);
-  tone(8, NOTE_G5, 400);
-  delay(600);
+void renderLine(int heightPos, int arr[]) {
+   lcd.setCursor(0, heightPos);
+   for(int i = 1; i<=15; i++) {
+    lcd.write((byte) arr[i+pos]);
+  }
+}
+
+void render(){
+  lcd.clear();
+
+  renderLine(0, top); 
+  renderLine(1, bottom); 
+
+  charPos = isActionPressed() ? 0 : 1; //set Char pos
+  lcd.setCursor(0, charPos);
+  lcd.write((byte) 5);
+}
+
+boolean checkColission(){
+  return (top[pos]!=0 && charPos==0) || (bottom[pos]!=0 && charPos==1);
+}
+
+void failScreen() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.write("GAME OVER");
+  lcd.setCursor(0, 1);
+  lcd.write("Punkte: ");
+  itoa(pos,buffer,10);
+  lcd.write(buffer);
+
+  failMusic();
+  waitTillButton();
+  pos=0;
+}
+
+void winScreen() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.write("GEWONNEN");
+  lcd.setCursor(0, 1);
+  lcd.write("Punkte: OVER9000");
+  winMusic();
+  waitTillButton();
+  pos=0;
 }
 
 void setup() {
    Serial.begin(9600);
    analogWrite(6, Contrast);
    lcd.begin(16, 2);
+   irrecv.enableIRIn();
    
    lcd.createChar(0, nothing);
    lcd.createChar(1, arrow);
