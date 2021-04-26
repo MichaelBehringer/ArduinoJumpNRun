@@ -169,14 +169,16 @@ void loop() {
   levelStartMusic();
 
   while(true){
-  render();
-  pos++;
-
-  if(checkColission()) {break;}
+    render();
+    pos++;
   
-  delay(2000 / level);
+    if(checkColission()) {
+      break;
+    }
+    
+    delay(2000 / level);
   }
-
+  
   if(top[pos]==6&&bottom[pos]==7){
     winScreen();
   } else {
