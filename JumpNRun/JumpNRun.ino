@@ -1,24 +1,23 @@
 /*
- * Informatik Projekt von Harun Sebastian und Michael
+ * Informatik Projekt von Aleyna Cikrik
  * Jump and Run auf dem LCD Display des Arduino
  * Verkabelung LCD: https://www.instructables.com/Arduino-Interfacing-With-LCD-Without-Potentiometer/
- * Github: https://github.com/MichaelBehringer/ArduinoJumpNRun
  */
 
 #include <LiquidCrystal.h>
-#include <IRremote.h> //Sketch->Bibliothek einbinden
-#include <IRremoteInt.h> 
 
-#include "pitches.h"
-#include "jingles.h"
-#include "constants.h"
+#include "pitches.h" //Töne
+#include "jingles.h" //Melodien
+#include "constants.h" //Konstanten
 
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+#define joyX A0 //Joy Stick
+#define joyY A1
 
-IRrecv irrecv(10);
-decode_results results;
+int height = 0; //Character höhe
+int prevHeight = 0;
 
-int Contrast=140;
+int Contrast=75; //LCD
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);  
 
 int pos = 0;
 int charPos = 0;
@@ -26,18 +25,11 @@ int tasterPin = 7;
 int level = 0;
 char buffer [10];
 
-int readIrValue(){
-  results.value = 0;
-  irrecv.decode(&results);
-  irrecv.resume();
-  return results.value;
+boolean isActionPressed(){ //ist Taster gedrückt
+  return (digitalRead(tasterPin)==HIGH);
 }
 
-boolean isActionPressed(){
-  return (digitalRead(tasterPin)==HIGH) || (readIrValue() != 0) ? true : false;
-}
-
-void waitTillButton(){
+void waitTillButton(){ //unendlichschleife bis Taster gedrückt wird
   while(true){
     if(isActionPressed()){
       return;
@@ -45,25 +37,25 @@ void waitTillButton(){
   }
 }
 
-void bootingAnimation() {
+void bootingAnimation() { //booting Animation mit coolem Text uwu
   lcd.setCursor(0, 0);
-  lcd.write("Info-Projekt von");
-  char namen[65] = "                Harun, Sebastian und Michael               ";
+  lcd.write("AnPr-Projekt");
+  char slider[65] = "                Aleyna Cikrik 03.12.2021 12A               ";
   for(int i=0; i<45; i++){
     lcd.setCursor(0, 1);
     for(int j=0; j<=15; j++){
-      lcd.write(namen[i+j]);
+      lcd.write(slider[i+j]);
     }
     delay(500);
         
-    if(isActionPressed()) { //fast exit bootingAnimation
+    if(isActionPressed()) { //überspringen
       break;
     }
   }
   delay(500);
 }
 
-void menueScreen() {
+void menueScreen() { //Levelauswahl
   lcd.clear();
   lcd.setCursor(1, 0);
   lcd.write("1-1");
@@ -77,18 +69,18 @@ void menueScreen() {
   lcd.setCursor(10, 1);
   lcd.write("1-4");
 
-  int off[][4] = {{9, 1}, {0, 0}, {9, 0}, {0, 1}};
-  int on[][4] = {{0, 0}, {9, 0}, {0, 1}, {9, 1}};
+  int off[][4] = {{9, 1}, {0, 0}, {9, 0}, {0, 1}}; //Positionen zum Pfeil löschen
+  int on[][4] = {{0, 0}, {9, 0}, {0, 1}, {9, 1}}; //Positionen zum Pfeil malen
 
-  while(true) {                              // Levelauswahl mit Pfeil
+  while(true) { //Neuen Pfeil malen und alten Pfeil löschen
     for(int i = 0; i<4; i++) {
       lcd.setCursor(off[i][0], off[i][1]);
       lcd.write((byte) 0); // ""
       lcd.setCursor(on[i][0], on[i][1]);
       lcd.write((byte) 1); // pfeil
-      for(int j = 0; j<5; j++){
-        delay(200);
-        if(isActionPressed()) {
+      for(int j = 0; j<15; j++){
+        delay(100);
+        if(isActionPressed()) { //Level ausgewählt
           level = i+1;
           goto A; // (╯°□°）╯︵ ┻━┻ 
         }
@@ -98,35 +90,60 @@ void menueScreen() {
   A:;
 }
 
-void renderLine(int heightPos, int arr[]) {
+void renderLine(int heightPos, int arr[]) { //Zeile Malen
    lcd.setCursor(0, heightPos);
    for(int i = 1; i<=15; i++) {
     lcd.write((byte) arr[i+pos]);
   }
 }
 
-void render(){
+void render(){ //Aufruf der Render Funktionen + Charakter rendern
   lcd.clear();
 
-  renderLine(0, top); 
-  renderLine(1, bottom); 
+  renderLine(0, top); //Zeile oben
+  renderLine(1, bottom); //Zeile unten
 
-  charPos = isActionPressed() ? 0 : 1; //set Char pos
-  lcd.setCursor(0, charPos);
-  lcd.write((byte) 5);
+  height = getCharHeight();
+  if(prevHeight == 1 && height == 0) { //not perfect but works
+      tone(8, 2700, 50);
+  }
+  lcd.setCursor(0, height);
+  prevHeight = height;
+  
+  lcd.write((byte) 5); //Character
 }
 
-boolean checkColission(){
-  return (top[pos]!=0 && charPos==0) || (bottom[pos]!=0 && charPos==1);
+int getCharHeight(){ //Ist Character oben oder unten
+  return isJoyTop() || isActionPressed() ? 0 : 1;
 }
 
-void failScreen() {
+boolean checkColission(){ //check colissions
+  return (top[pos+1]!=0 && getCharHeight()==0) || (bottom[pos+1]!=0 && getCharHeight()==1);
+}
+
+boolean isJoyTop(){
+  return (analogRead(joyX) < 100);
+}
+
+boolean isJoyBottom(){
+  return (analogRead(joyX) > 500);
+}
+
+boolean isJoyRight(){
+  return (analogRead(joyY) < 100);
+}
+
+boolean isJoyLeft(){
+  return (analogRead(joyY) > 500);
+}
+
+void failScreen() { //fail Screen
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.write("GAME OVER");
   lcd.setCursor(0, 1);
   lcd.write("Punkte: ");
-  itoa(pos,buffer,10);
+  itoa(pos,buffer,10); //Wandelt integer zu Sting um
   lcd.write(buffer);
 
   failMusic();
@@ -134,7 +151,7 @@ void failScreen() {
   pos=0;
 }
 
-void winScreen() {
+void winScreen() { //win Screen
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.write("GEWONNEN");
@@ -147,11 +164,10 @@ void winScreen() {
 
 void setup() {
    Serial.begin(9600);
-   analogWrite(6, Contrast);
+   analogWrite(6,Contrast);
    lcd.begin(16, 2);
-   irrecv.enableIRIn();
    
-   lcd.createChar(0, nothing);
+   lcd.createChar(0, nothing); //Charaktermodelle dem LCD Display "beibringen" //in constants.h gespeichert
    lcd.createChar(1, arrow);
    lcd.createChar(2, block1);
    lcd.createChar(3, block2);
@@ -169,17 +185,23 @@ void loop() {
   levelStartMusic();
 
   while(true){
-    render();
-    pos++;
-  
-    if(checkColission()) {
-      break;
+    if(isJoyRight()){
+       pos++; //rechts
+    }
+    if(isJoyLeft() && pos > 0){
+       pos--; //links
     }
     
-    delay(2000 / level);
+    render();
+    
+    if(checkColission()) {
+      break; //unendlichschleife beenden falls Treffer
+    }
+    
+    delay(1500/level); //Geschwindigkeit gemäß Lebel
   }
   
-  if(top[pos]==6&&bottom[pos]==7){
+  if(top[pos+1]==6&&bottom[pos+1]==7){ //Überprüfung ob Kollision mit Ziel oder mit Stein/Vogel
     winScreen();
   } else {
     failScreen();
